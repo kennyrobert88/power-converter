@@ -93,6 +93,39 @@ Measurement directives in the buck converter compute the reverse-recovery charge
 
 ---
 
+## Losses Modeled
+
+Both simulations include several physically-based loss mechanisms:
+
+### Conduction Losses
+
+| Mechanism | How It Is Modeled |
+|-----------|-------------------|
+| **Inductor DCR** | Series resistor `RL = 2 mΩ` on L1 captures DC copper loss |
+| **MOSFET conduction** | IRFZ44N and IRFH5004 SPICE models include channel on-resistance `Rds(on)` |
+| **Diode forward drop** | MBR735 and 1N5817 Schottky models capture `VF × IF` conduction loss |
+
+### Switching Losses
+
+- **Hard-switching energy** — The buck converter includes a `.meas` directive that integrates instantaneous MOSFET power (`V × I`) during a switching transition to quantify turn-on/turn-off energy loss
+- **Gate drive loss** — Driver subcircuits supply the peak current needed to charge/discharge MOSFET gate capacitance (`Cgs`, `Cgd`) at 100 kHz; quiescent loss is modeled via `IQ = 1 mA`
+- **Reverse recovery** — The buck `.meas Qrr` directive integrates the low-side MOSFET body-diode reverse-recovery charge, a significant loss contributor in hard-switched converters
+
+### Auxiliary Losses
+
+- Bootstrap diode forward drops (D1 in boost, D2 in buck)
+- Gate driver quiescent and cross-conduction current
+
+### What Is *Not* Modeled
+
+- Magnetic core losses (hysteresis, eddy current) — inductors are ideal aside from DCR
+- Capacitor ESR — all capacitors are ideal (no series resistance)
+- PCB parasitics — trace resistance, inductance, and coupling are omitted
+- Thermal effects — `Rds(on)` and diode `VF` are temperature-independent
+- Skin/proximity effect in the inductor winding
+
+---
+
 ## Getting Started
 
 1. Install [LTSpice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html) (free).
