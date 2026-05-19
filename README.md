@@ -1,10 +1,51 @@
 # Power Converter
 
-This repository contains **LTSpice** simulations for two fundamental DC–DC switching power converter topologies: a **synchronous buck converter** (step-down) and a **synchronous boost converter** (step-up). The simulations model closed-loop control with a **trailing-edge pulse-width modulator (PWM)**, **gate drivers** with bootstrap supply, and **dead-time generation** for synchronous rectification.
+This repository contains **LTSpice** simulations for four DC–DC switching power converter topologies: a **buck converter** (step-down) and a **boost converter** (step-up), each in both **synchronous** and **non-synchronous** (diode-rectified) variants.
 
 ---
 
-## Buck Converter (`buck-converter/`)
+## Non-Synchronous Converters
+
+These topologies use a Schottky diode for the rectification path, eliminating the need for a second MOSFET, gate driver, and dead-time logic.
+
+### Buck Converter (`buck-converter/`)
+
+| Parameter         | Value            |
+|-------------------|------------------|
+| Input voltage     | 12 V             |
+| Topology          | Non-synchronous buck |
+| Duty cycle        | 0.104            |
+| Inductor (L1)     | 4 µH / 2 mΩ DCR |
+| Output cap (C1)   | 680 µF           |
+| Load resistance   | 0.05 Ω           |
+| MOSFET            | IRFZ44N          |
+| Freewheeling diode| MBR735 Schottky  |
+| PWM frequency     | 100 kHz          |
+| Simulation        | 2 ms transient, startup |
+
+### Boost Converter (`boost-converter/`)
+
+| Parameter         | Value            |
+|-------------------|------------------|
+| Input voltage     | 12 V             |
+| Topology          | Non-synchronous boost |
+| Duty cycle        | 0.5              |
+| Inductor (L1)     | 60 µH / 2 mΩ DCR|
+| Input cap         | 10 µF            |
+| Output cap (C1)   | 100 µF           |
+| Load resistance   | 12 Ω             |
+| MOSFET            | IRFZ44N          |
+| Output diode      | MBR735 Schottky  |
+| PWM frequency     | 100 kHz          |
+| Simulation        | 10 ms transient, UIC, initial Vout = 24 V |
+
+---
+
+## Synchronous Converters
+
+These topologies replace the freewheeling diode with a low-side MOSFET (synchronous rectifier) to reduce conduction losses, requiring dead-time generation and an additional gate driver.
+
+### Synchronous Buck Converter (`sync-buck-converter/`)
 
 | Parameter         | Value            |
 |-------------------|------------------|
@@ -20,15 +61,13 @@ This repository contains **LTSpice** simulations for two fundamental DC–DC swi
 | Dead time         | 100 ns           |
 | Simulation        | 2 ms transient, startup |
 
-### How It Works
+#### How It Works
 
-The **synchronous buck converter** steps down the 12 V input to a lower output voltage. A PWM modulator generates a switching signal at the duty cycle set by `Vduty` (0.104). This signal passes through a **dead-time generator**, which produces two complementary gate-drive signals separated by a 100 ns non-overlap interval. The high-side MOSFET (M1, IRFZ44N) and low-side synchronous MOSFET (M2, IRFH5004) switch the inductor node between Vin and ground. During the high-side on-time, current ramps up through L1, storing energy. During the off-time, the low-side MOSFET provides a low-resistance path for inductor current, acting as a synchronous rectifier. The output capacitor (C1) filters the switching ripple, delivering a regulated low-voltage, high-current output to the 0.05 Ω load.
+The high-side MOSFET (M1, IRFZ44N) and low-side synchronous MOSFET (M2, IRFH5004) switch the inductor node between Vin and ground. A dead-time generator produces complementary gate-drive signals separated by a 100 ns non-overlap interval. During the high-side on-time, current ramps up through L1, storing energy. During the off-time, the low-side MOSFET provides a low-resistance path for inductor current, acting as a synchronous rectifier. The output capacitor (C1) filters the switching ripple, delivering a regulated low-voltage, high-current output to the 0.05 Ω load.
 
-Two **gate driver** instances (U1, U3) provide the peak current needed to charge and discharge the MOSFET gate capacitance rapidly, minimising switching losses. The low-side driver U1 drives M1; driver U3 drives M2. Schottky diodes D2 (1N5817) and D4 (MBR735) clamp inductive spikes and bootstrap capacitor C2 (10 µF) supplies the high-side driver's floating supply rail. A second Schottky diode D3 (MBR735) serves as the freewheeling path during dead times.
+Two gate driver instances (U1, U3) provide the peak current needed to charge and discharge the MOSFET gate capacitance rapidly. The low-side driver U1 drives M1; driver U3 drives M2. Schottky diodes D2 (1N5817) and D4 (MBR735) clamp inductive spikes and bootstrap capacitor C2 (10 µF) supplies the high-side driver's floating supply rail. A second Schottky diode D3 (MBR735) serves as the freewheeling path during dead times.
 
----
-
-## Boost Converter (`boost-converter/`)
+### Synchronous Boost Converter (`sync-boost-converter/`)
 
 | Parameter         | Value            |
 |-------------------|------------------|
@@ -45,9 +84,7 @@ Two **gate driver** instances (U1, U3) provide the peak current needed to charge
 | Dead time         | 100 ns           |
 | Simulation        | 10 ms transient, UIC, initial Vout = 24 V |
 
-### How It Works
-
-The **synchronous boost converter** steps up the 12 V input to a regulated 24 V output (preset via `.ic V(Vout)=24`). The PWM modulator operates at a 0.5 duty ratio, producing a train of pulses that pass through the dead-time generator to create complementary gate signals with a 100 ns non-overlap guard band.
+#### How It Works
 
 During the switch on-time, MOSFET M2 (the main switch) conducts, shorting the output side of L1 to ground and causing inductor current to ramp up, storing magnetic energy. Diode D3 (MBR735) reverse-biases, isolating the output. During the off-time, M2 turns off and the high-side synchronous MOSFET M1 turns on, connecting the inductor to the output. The inductor's stored energy forces current through M1 and D3 into the output capacitor C1 and the 12 Ω load, producing a voltage higher than the input.
 
@@ -57,13 +94,13 @@ Two gate driver stages provide robust switching: U1 (low-side) drives M2 with 6 
 
 ## Shared Subcircuit Blocks
 
-All three `.asy` files are shared between both converter directories:
+The `.asy` symbols and `switching.lib` are available in each converter directory:
 
 | Symbol             | Description |
 |--------------------|-------------|
 | `PWM.asy`          | Trailing-edge pulse-width modulator. Compares a control voltage (`vc`) against a sawtooth ramp (100 kHz, 1 V amplitude) and outputs a duty-cycle-modulated logic-level signal (`c`). Configurable min/max duty limits and offset. |
 | `Driver.asy`        | Gate driver with 3 A (or 6 A) peak output current, 30 ns propagation delay, 1 mA quiescent current, and undervoltage lockout (UVLO) at 9 V. |
-| `dead_time.asy`     | Dead-time generator. Accepts a single PWM input (`c`) and produces two complementary outputs (`c1`, `c2`) separated by a programmable non-overlap interval `Td` (default 100 ns). |
+| `dead_time.asy`     | Dead-time generator (synchronous variants only). Accepts a single PWM input (`c`) and produces two complementary outputs (`c1`, `c2`) separated by a programmable non-overlap interval `Td` (default 100 ns). |
 
 The `switching.lib` file contains the SPICE subcircuit models for these blocks (PWM ramp generator, driver, dead-time logic).
 
@@ -71,21 +108,35 @@ The `switching.lib` file contains the SPICE subcircuit models for these blocks (
 
 ## Simulation Directives
 
-**Buck converter:**
+**Buck converter (non-synchronous):**
 ```
 .tran 0 2msec 0 20e-9 startup uic
 .ic V(Vout)=0
 .options reltol=0.0005
 ```
 
-**Boost converter:**
+**Synchronous buck converter:**
+```
+.tran 0 2msec 0 20e-9 startup uic
+.ic V(Vout)=0
+.options reltol=0.0005
+```
+
+**Boost converter (non-synchronous):**
 ```
 .tran 0 10msec 0 20e-9 UIC
 .ic V(Vout)=24
 .options reltol=0.0005
 ```
 
-Measurement directives in the buck converter compute the reverse-recovery charge (`Qrr`) of the low-side MOSFET body diode and the switching energy (`Eevent`) during a specific switching event:
+**Synchronous boost converter:**
+```
+.tran 0 10msec 0 20e-9 UIC
+.ic V(Vout)=24
+.options reltol=0.0005
+```
+
+Measurement directives in the synchronous buck converter compute the reverse-recovery charge (`Qrr`) of the low-side MOSFET body diode and the switching energy (`Eevent`) during a specific switching event:
 ```
 .meas tran Qrr INTEGRAL I(M2) FROM=1u TO=1.05u
 .meas TRAN Eevent INTEGRAL V(n006)*Is(M2) FROM=549.9u TO=550.1u
@@ -95,7 +146,7 @@ Measurement directives in the buck converter compute the reverse-recovery charge
 
 ## Losses Modeled
 
-Both simulations include several physically-based loss mechanisms:
+All simulations include several physically-based loss mechanisms:
 
 ### Conduction Losses
 
@@ -113,7 +164,7 @@ Both simulations include several physically-based loss mechanisms:
 
 ### Auxiliary Losses
 
-- Bootstrap diode forward drops (D1 in boost, D2 in buck)
+- Bootstrap diode forward drops
 - Gate driver quiescent and cross-conduction current
 
 ### What Is *Not* Modeled
@@ -129,7 +180,7 @@ Both simulations include several physically-based loss mechanisms:
 ## Getting Started
 
 1. Install [LTSpice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html) (free).
-2. Open the `.asc` schematic file in either `buck-converter/` or `boost-converter/`.
+2. Open the `.asc` schematic file in the desired converter directory.
 3. Run the simulation (Simulate > Run).
 4. Probe the nodes of interest: `Vout`, `Vsw` (switch node), inductor current, MOSFET gate signals.
 
