@@ -1,6 +1,6 @@
 # Power Converter
 
-This repository contains **LTSpice** simulations for four DC–DC switching power converter topologies: a **buck converter** (step-down) and a **boost converter** (step-up), each in both **synchronous** and **non-synchronous** (diode-rectified) variants.
+This repository contains **LTSpice** simulations for five DC–DC switching power converter topologies: a **buck converter** (step-down) and a **boost converter** (step-up), each in both **synchronous** and **non-synchronous** (diode-rectified) variants, plus a **Ćuk converter** (inverting).
 
 ---
 
@@ -134,6 +134,19 @@ The `switching.lib` file contains the SPICE subcircuit models for these blocks (
 .tran 0 10msec 0 20e-9 UIC
 .ic V(Vout)=24
 .options reltol=0.0005
+```
+
+**Ćuk converter:**
+```
+.tran 0 10msec 0 20e-9 startup uic
+.options reltol=0.0005
+```
+
+Efficiency measurement directives in the Ćuk converter compute input power, output power, and efficiency over the last 2 ms:
+```
+.meas TRAN Pin AVG V(Vin)*I(Vg) FROM=8m TO=10m
+.meas TRAN Pout AVG V(Vout)**2/5 FROM=8m TO=10m
+.meas TRAN efficiency PARAM Pout/Pin*100
 ```
 
 Measurement directives in the synchronous buck converter compute the reverse-recovery charge (`Qrr`) of the low-side MOSFET body diode and the switching energy (`Eevent`) during a specific switching event:
