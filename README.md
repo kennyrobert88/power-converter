@@ -1,6 +1,6 @@
 # Power Converter
 
-This repository contains **LTSpice** simulations for five DC–DC switching power converter topologies: a **buck converter** (step-down) and a **boost converter** (step-up), each in both **synchronous** and **non-synchronous** (diode-rectified) variants, plus a **Ćuk converter** (inverting).
+This repository contains a collection of **LTspice** simulations for DC–DC switching converters, including buck, boost, buck-boost, and Ćuk topologies in synchronous, non-synchronous, and GaN-based implementations.
 
 ---
 
@@ -90,6 +90,33 @@ During the switch on-time, MOSFET M2 (the main switch) conducts, shorting the ou
 
 Two gate driver stages provide robust switching: U1 (low-side) drives M2 with 6 A peak current capability, while U3 (high-side) drives M1 and is powered by a bootstrap supply formed by diode D1 and capacitor C2. Schottky diodes D1, D2, and D3 (all MBR735) handle bootstrap charging, gate clamping, and output rectification respectively.
 
+### GaN Synchronous Boost Converter (`gan-sync-boost-converter/`)
+
+The `GanSynchBoost.asc` schematic replaces the silicon IRFZ44N switches with two Nexperia `GAN039-650NxB` 650 V cascode GaN FET models.
+
+| Parameter         | Value |
+|-------------------|-------|
+| Input voltage     | 12 V |
+| Duty cycle        | 0.5 |
+| Inductor (L1)     | 60 µH / 2 mΩ DCR |
+| Input capacitor   | 100 µF |
+| Bootstrap capacitor | 10 µF |
+| Output capacitor  | 100 µF |
+| Load resistance   | 12 Ω |
+| GaN FETs          | Nexperia GAN039-650NxB |
+| Gate resistors    | 22 Ω |
+| Gate clamps       | BZX84C15L, 15 V |
+| PWM frequency     | 100 kHz |
+| Dead time         | 100 ns |
+| Simulation        | 10 ms transient, UIC, initial Vout = 24 V |
+
+The vendor model and matching symbol are stored beside the schematic:
+
+- `GAN039-650NxB.asy`
+- `GAN039-650NxB_LTspice.lib`
+
+The encrypted model is version 1.0.5 and requires **LTspice 26.0.1 or newer**. Older LTspice releases, including 17.0.x, fail while decoding the model and may report errors such as `Unknown symbol: aa`.
+
 ---
 
 ## Shared Subcircuit Blocks
@@ -167,6 +194,7 @@ All simulations include several physically-based loss mechanisms:
 |-----------|-------------------|
 | **Inductor DCR** | Series resistor `RL = 2 mΩ` on L1 captures DC copper loss |
 | **MOSFET conduction** | IRFZ44N and IRFH5004 SPICE models include channel on-resistance `Rds(on)` |
+| **GaN conduction** | The Nexperia GAN039-650NxB model includes nonlinear channel behavior, leakage, capacitances, and package interconnect parasitics |
 | **Diode forward drop** | MBR735 and 1N5817 Schottky models capture `VF × IF` conduction loss |
 
 ### Switching Losses
@@ -184,7 +212,7 @@ All simulations include several physically-based loss mechanisms:
 
 - Magnetic core losses (hysteresis, eddy current) — inductors are ideal aside from DCR
 - Capacitor ESR — all capacitors are ideal (no series resistance)
-- PCB parasitics — trace resistance, inductance, and coupling are omitted
+- PCB parasitics — trace resistance, inductance, and coupling are omitted; the Nexperia GaN model still includes device-package interconnect parasitics
 - Thermal effects — `Rds(on)` and diode `VF` are temperature-independent
 - Skin/proximity effect in the inductor winding
 
@@ -192,7 +220,7 @@ All simulations include several physically-based loss mechanisms:
 
 ## Getting Started
 
-1. Install [LTSpice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html) (free).
+1. Install [LTspice](https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html) (free). Use version 26.0.1 or newer for the GaN model.
 2. Open the `.asc` schematic file in the desired converter directory.
 3. Run the simulation (Simulate > Run).
 4. Probe the nodes of interest: `Vout`, `Vsw` (switch node), inductor current, MOSFET gate signals.
