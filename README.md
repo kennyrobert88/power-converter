@@ -4,7 +4,7 @@
 
 ![LTspice](https://img.shields.io/badge/LTspice-26%2B-DC143C?style=flat-square)
 ![Domain](https://img.shields.io/badge/Domain-Power%20Electronics-1F6FEB?style=flat-square)
-![Topologies](https://img.shields.io/badge/Topologies-9-2EA043?style=flat-square)
+![Topologies](https://img.shields.io/badge/Topologies-10-2EA043?style=flat-square)
 ![Purpose](https://img.shields.io/badge/Purpose-Education%20%26%20Reference-6E7781?style=flat-square)
 
 [Simulation Library](#simulation-library) ·
@@ -15,7 +15,7 @@
 
 ---
 
-This repository provides a structured collection of DC–DC converter simulations covering buck, boost, buck-boost, and Ćuk-family topologies. Designs include diode-rectified, synchronous, and 650 V cascode GaN implementations with reusable PWM, dead-time, and gate-driver subcircuits.
+This repository provides a structured collection of DC–DC converter simulations covering buck, boost, buck-boost, and Ćuk-family topologies. Designs include diode-rectified, synchronous, and 650 V cascode GaN buck and boost implementations with reusable PWM, dead-time, and gate-driver subcircuits.
 
 > [!IMPORTANT]
 > The Nexperia GaN model requires **LTspice 26.0.1 or newer**. Other schematics can be used with earlier LTspice releases.
@@ -29,11 +29,12 @@ Select **Open schematic** to view the LTspice source or **Design notes** to jump
 | Diode-rectified | Buck | Positive | [Open schematic](buck-converter/buck.asc) | [Design notes](#buck-converter) |
 | Diode-rectified | Boost | Positive | [Open schematic](boost-converter/boost.asc) | [Design notes](#boost-converter) |
 | Diode-rectified | Buck-boost | Negative | [Open schematic](buck-boost-converter/BuckBoost.asc) | [Design notes](#buck-boost-converter) |
-| Diode-rectified | Ćuk-family / SEPIC | Positive | [Open schematic](cuk-converter/Cuk.asc) | [Design notes](#cuk--sepic-converter) |
+| Diode-rectified | Ćuk-family / SEPIC | Positive | [Open schematic](cuk-converter/Cuk.asc) | [Design notes](#cuk-sepic-converter) |
 | Synchronous | Buck | Positive | [Open schematic](sync-buck-converter/Buckdiode.asc) | [Design notes](#synchronous-buck-converter) |
 | Synchronous | Boost | Positive | [Open schematic](sync-boost-converter/SynchBoost.asc) | [Design notes](#synchronous-boost-converter) |
 | Synchronous | Buck-boost | Negative | [Open schematic](sync-buck-boost-converter/SyncBuckBoost.asc) | [Design notes](#synchronous-buck-boost-converter) |
-| Synchronous | Ćuk-family / SEPIC | Positive | [Open schematic](sync-cuk-converter/SyncCuk.asc) | [Design notes](#synchronous-cuk--sepic-converter) |
+| Synchronous | Ćuk-family / SEPIC | Positive | [Open schematic](sync-cuk-converter/SyncCuk.asc) | [Design notes](#synchronous-cuk-sepic-converter) |
+| Cascode GaN | Synchronous buck | Positive | [Open schematic](gan-sync-buck-converter/GanSyncBuckdiode.asc) | [Design notes](#gan-synchronous-buck-converter) |
 | Cascode GaN | Synchronous boost | Positive | [Open schematic](gan-sync-boost-converter/GanSynchBoost.asc) | [Design notes](#gan-synchronous-boost-converter) |
 
 ---
@@ -94,7 +95,7 @@ This inverting buck-boost converter uses one IRFS4010 MOSFET and an MBR735 diode
 | Rectifier | MBR735 |
 | Simulation | 5 ms transient, startup |
 
-### Cuk / SEPIC Converter
+### Cuk-SEPIC Converter
 
 **Schematic:** [`cuk-converter/Cuk.asc`](cuk-converter/Cuk.asc)
 
@@ -186,7 +187,7 @@ This inverting synchronous buck-boost converter replaces the rectifier with a se
 | MOSFETs | IRFZ44N |
 | Simulation | 5 ms transient, startup |
 
-### Synchronous Cuk / SEPIC Converter
+### Synchronous Cuk-SEPIC Converter
 
 **Schematic:** [`sync-cuk-converter/SyncCuk.asc`](sync-cuk-converter/SyncCuk.asc)
 
@@ -203,6 +204,39 @@ This non-inverting synchronous SEPIC implementation replaces the output diode wi
 | Load resistance | 10 Ω |
 | MOSFETs | IRFZ44N |
 | Simulation | 5 ms transient, startup |
+
+### GaN Synchronous Buck Converter
+
+**Schematic:** [`gan-sync-buck-converter/GanSyncBuckdiode.asc`](gan-sync-buck-converter/GanSyncBuckdiode.asc)
+
+This synchronous buck design replaces both silicon MOSFETs with Nexperia `GAN039-650NxB` 650 V cascode GaN FET models. Complementary PWM signals and dead time drive the high-side and low-side devices, while 15 V Zener clamps protect each gate.
+
+| Parameter | Value |
+|-----------|-------|
+| Input voltage | 12 V |
+| Duty cycle | 0.4 |
+| Ideal output voltage | 4.8 V |
+| Inductor | 4 µH / 2 mΩ DCR |
+| Output capacitor | 680 µF |
+| Bootstrap capacitor | 10 µF |
+| Load resistance | 0.05 Ω |
+| GaN FETs | Nexperia GAN039-650NxB |
+| Gate resistors | 22 Ω |
+| Gate clamps | BZX84C15L, 15 V |
+| PWM frequency | 100 kHz |
+| Dead time | 100 ns |
+| Simulation | 2 ms transient, startup |
+
+The schematic depends on these local model and control files:
+
+- [`GAN039-650NxB.asy`](gan-sync-buck-converter/GAN039-650NxB.asy)
+- [`GAN039-650NxB_LTspice.lib`](gan-sync-buck-converter/GAN039-650NxB_LTspice.lib)
+- [`Driver.asy`](gan-sync-buck-converter/Driver.asy)
+- [`PWM.asy`](gan-sync-buck-converter/PWM.asy)
+- [`dead_time.asy`](gan-sync-buck-converter/dead_time.asy)
+- [`switching.lib`](gan-sync-buck-converter/switching.lib)
+
+The encrypted Nexperia model requires **LTspice 26.0.1 or newer**.
 
 ### GaN Synchronous Boost Converter
 
